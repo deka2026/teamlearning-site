@@ -202,6 +202,12 @@ function showTab(t){
     document.getElementById('tab'+k).className = (k===t) ? 'on' : '';
     document.getElementById('pane-'+k).className = (k===t) ? 'pane on' : 'pane';
   });
+  // 탭을 열 때마다 최신 데이터로 갱신
+  if(t==='q') loadQuestions();
+  else if(t==='p') loadPlans();
+  else if(t==='r') loadResearch();
+  else if(t==='n') loadNotifications();
+  else if(t==='t') loadTeams();
 }
 function setCount(id, n){
   var el = document.getElementById(id);
@@ -355,6 +361,7 @@ async function publishAnswer(id){
   }).eq('id', id);
   if(res.error){ setMsg('qm'+id,'err','게시 실패: ' + res.error.message); return; }
   loadQuestions();
+  loadNotifications();  // 전화번호가 있으면 방금 문자 대기가 쌓였을 수 있음
 }
 
 /* ── 계획안함 ── */
