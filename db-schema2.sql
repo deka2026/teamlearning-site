@@ -72,4 +72,22 @@ drop trigger if exists tl_questions_sms on public.tl_questions;
 create trigger tl_questions_sms after update on public.tl_questions
   for each row execute function public.tl_queue_answer_sms();
 
+-- ------------------------------------------------------------
+-- 5) 대기 건수 조회 (모바일 알림 감시용 — 내용은 노출하지 않고 숫자만)
+-- ------------------------------------------------------------
+create or replace function public.tl_pending_counts()
+returns table(questions_waiting bigint, plans_waiting bigint,
+              research_waiting bigint, newest_at timestamptz)
+language sql security definer set search_path = public stable as $$
+  select
+    (select count(*) from tl_questions where status = '대기중'),
+    (select count(*) from tl_plans     where status = '대기중'),
+    (select count(*) from tl_research  where status = '대기중'),
+    greatest(
+      (select max(created_at) from tl_questions where status = '대기중'),
+      (select max(created_at) from tl_plans     where status = '대기중'),
+      (select max(created_at) from tl_research  where status = '대기중')
+    );
+$$;
+
 -- 끝. Run 후 "Success" 나오면 완료.
