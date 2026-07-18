@@ -93,6 +93,7 @@ table.tl td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:m
     <button id="tabq" class="on" onclick="showTab('q')">💬 질문함<span class="n" id="nQ" style="display:none"></span></button>
     <button id="tabp" onclick="showTab('p')">📝 계획안함<span class="n" id="nP" style="display:none"></span></button>
     <button id="tabr" onclick="showTab('r')">📚 조사요청함<span class="n" id="nR" style="display:none"></span></button>
+    <button id="tabn" onclick="showTab('n')">📨 알림함<span class="n" id="nN" style="display:none"></span></button>
     <button id="tabt" onclick="showTab('t')">👥 팀 목록</button>
     <button id="tabrep" onclick="showTab('rep')">📊 보고서 발행</button>
   </div>
@@ -125,6 +126,19 @@ table.tl td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:m
     </section>
     <section class="blk">
       <details class="fold"><summary>게시 완료된 조사자료 보기</summary><div id="rDone"></div></details>
+    </section>
+  </div>
+
+  <div class="pane" id="pane-n">
+    <section class="blk">
+      <h2 class="sec serif">문자 발송 대기</h2>
+      <p class="hint">질문자가 전화번호를 남긴 경우, 답변을 게시하는 순간 여기에 발송할 문자가 자동으로 쌓입니다.<br>
+      문자 게이트웨이 연결 전까지는 <b>메시지 복사 → 휴대폰에서 직접 발송 → 발송완료 처리</b> 순서로 쓰세요.</p>
+      <div id="nWait" style="margin-top:10px"><div class="empty">불러오는 중...</div></div>
+      <div class="msg" id="nMsg"></div>
+    </section>
+    <section class="blk">
+      <details class="fold"><summary>발송 완료된 알림 보기</summary><div id="nDone"></div></details>
     </section>
   </div>
 
@@ -161,6 +175,14 @@ var sb = window.supabase.createClient(SB_URL, SB_KEY);
 var teams = [];
 var qCache = {}, pCache = {}, rCache = {};
 
+/* ── AI 직접연결 설정 ──────────────────────────────────────
+   추후 클로드 API 프록시(지미 /api/ai 또는 Supabase Edge Function)가
+   준비되면 아래에 주소만 넣으면 "AI 답변 시작하기"가 작동합니다.
+   규격: POST {type:'question', team:'팀명', topic:'주제', question:'내용'}
+         → 응답 {answer:'답변 초안'}
+   비워 두면(현재) 버튼을 눌렀을 때 클로드코드 사용 안내가 뜹니다. */
+var AI_ENDPOINT = '';
+
 function esc(s){
   return String(s == null ? '' : s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -176,7 +198,7 @@ function setMsg(id, cls, text){
   m.className = 'msg ' + cls; m.textContent = text;
 }
 function showTab(t){
-  ['q','p','r','t','rep'].forEach(function(k){
+  ['q','p','r','n','t','rep'].forEach(function(k){
     document.getElementById('tab'+k).className = (k===t) ? 'on' : '';
     document.getElementById('pane-'+k).className = (k===t) ? 'pane on' : 'pane';
   });
@@ -215,7 +237,7 @@ function showDash(){
   document.getElementById('authBox').style.display = 'none';
   document.getElementById('dash').style.display = 'block';
   document.getElementById('logoutBtn').style.display = 'inline-block';
-  loadTeams(); loadQuestions(); loadPlans(); loadResearch();
+  loadTeams(); loadQuestions(); loadPlans(); loadResearch(); loadNotifications();
 }
 
 /* ── 팀 목록 ── */
@@ -267,6 +289,8 @@ async function loadQuestions(){
     return '<div class="item">'
       + '<div class="meta"><span class="team">' + esc(q.tl_teams ? q.tl_teams.name : '?') + '</span><span class="date">' + fmtDT(q.created_at) + '</span></div>'
       + '<div class="q-content">' + esc(q.content) + '</div>'
+      + (q.phone ? '<div class="hint">📞 답변 문자 알림 요청: ' + esc(q.phone) + '</div>' : '')
+      + '<button class="ghost" onclick="callAiApi(' + q.id + ')">🤖 AI 답변 시작하기</button>'
       + '<label>🤖 AI 분석 (데카와 만든 초안)</label>'
       + '<textarea id="qa' + q.id + '"></textarea>'
       + '<label>🌱 이사장 추가 조언</label>'
@@ -297,6 +321,30 @@ function editAnswer(id){
     + '<button class="pri" onclick="publishAnswer(' + id + ')">수정한 답변 게시</button>'
     + '<div class="msg" id="qm' + id + '"></div>';
 }
+/* ── AI 답변 시작하기 (AI_ENDPOINT 연결 전에는 안내만) ── */
+async function callAiApi(id){
+  var q = qCache[id]; if(!q) return;
+  if(!AI_ENDPOINT){
+    setMsg('qm'+id,'info','아직 AI 직접연결 전입니다. 클로드코드(데카)에게 "질문 답변하자"라고 하면 초안을 만들어 줍니다. (직접연결은 API 프록시 준비 후 AI_ENDPOINT에 주소만 넣으면 됩니다)');
+    return;
+  }
+  setMsg('qm'+id,'info','AI가 답변 초안을 만드는 중...');
+  try{
+    var team = teams.find(function(t){ return t.id === q.team_id; });
+    var r = await fetch(AI_ENDPOINT, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ type:'question', team: q.tl_teams ? q.tl_teams.name : '',
+        topic: team ? team.topic : '', question: q.content })
+    });
+    var j = await r.json();
+    if(!j || !j.answer) throw new Error('응답 형식이 올바르지 않습니다');
+    document.getElementById('qa'+id).value = j.answer;
+    setMsg('qm'+id,'ok','AI 초안이 채워졌습니다. 검토·수정 후 조언을 더해 게시하세요.');
+  }catch(e){
+    setMsg('qm'+id,'err','AI 호출 실패: ' + e.message);
+  }
+}
+
 async function publishAnswer(id){
   var ai = document.getElementById('qa'+id).value.trim();
   var adv = document.getElementById('qv'+id).value.trim();
@@ -405,6 +453,48 @@ async function publishMaterials(id){
   }).eq('id', id);
   if(res.error){ setMsg('rmsg'+id,'err','게시 실패: ' + res.error.message); return; }
   loadResearch();
+}
+
+/* ── 알림함 (문자 발송 대기) ── */
+async function loadNotifications(){
+  var res = await sb.from('tl_notifications').select('*').order('created_at', {ascending:false});
+  var w = document.getElementById('nWait'), d = document.getElementById('nDone');
+  if(res.error){ w.innerHTML = '<div class="empty">불러오기 실패: ' + esc(res.error.message) + ' (db-schema2.sql 실행 여부 확인)</div>'; return; }
+  var wait = res.data.filter(function(n){ return n.status === '발송대기'; });
+  var done = res.data.filter(function(n){ return n.status !== '발송대기'; });
+  setCount('nN', wait.length);
+  w.innerHTML = wait.length ? wait.map(function(n){
+    return '<div class="item">'
+      + '<div class="meta"><span class="team">📞 ' + esc(n.phone) + '</span><span class="date">' + fmtDT(n.created_at) + '</span></div>'
+      + '<div class="q-content" id="nmsg' + n.id + '">' + esc(n.message) + '</div>'
+      + '<button class="ghost" onclick="copyNotif(' + n.id + ')">📋 메시지 복사</button> '
+      + '<button class="ghost" onclick="markSent(' + n.id + ')">✅ 발송완료 처리</button>'
+      + '</div>';
+  }).join('') : '<div class="empty">발송 대기 중인 알림이 없습니다.</div>';
+  d.innerHTML = done.length ? done.map(function(n){
+    return '<div class="item"><div class="meta"><span class="team">📞 ' + esc(n.phone) + '</span>'
+      + '<span class="badge done">발송완료 ' + fmtDT(n.sent_at) + '</span></div>'
+      + '<div class="q-content">' + esc(n.message) + '</div></div>';
+  }).join('') : '<div class="empty">발송 완료된 알림이 없습니다.</div>';
+}
+function copyNotif(id){
+  var text = document.getElementById('nmsg'+id).innerText;
+  function done(){ setMsg('nMsg','ok','메시지가 복사되었습니다. 휴대폰 문자로 붙여넣어 보내세요.'); }
+  function fallback(){
+    var ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); done(); } catch(e){ setMsg('nMsg','err','복사 실패 — 메시지를 직접 드래그해 복사해 주세요.'); }
+    document.body.removeChild(ta);
+  }
+  if(navigator.clipboard && window.isSecureContext){ navigator.clipboard.writeText(text).then(done, fallback); }
+  else { fallback(); }
+}
+async function markSent(id){
+  var res = await sb.from('tl_notifications').update({
+    status: '발송완료', sent_at: new Date().toISOString()
+  }).eq('id', id);
+  if(res.error){ setMsg('nMsg','err','처리 실패: ' + res.error.message); return; }
+  loadNotifications();
 }
 
 /* ── 보고서 발행 ── */

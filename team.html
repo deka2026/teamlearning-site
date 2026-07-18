@@ -124,6 +124,8 @@ footer{border-top:1px solid var(--line);margin-top:40px;padding:24px 0;text-alig
         <p class="sec-sub">AI 분석에 사회혁신교육원의 조언을 더해 이 페이지에 회신해 드립니다.</p>
         <label for="qContent">궁금한 내용</label>
         <textarea id="qContent" maxlength="5000" placeholder="팀러닝을 진행하며 궁금한 점, 막히는 지점을 자유롭게 적어 주세요."></textarea>
+        <label for="qPhone">휴대폰 번호 <span style="font-weight:400;color:var(--sub)">(선택 — 답변이 게시되면 문자로 알려 드립니다)</span></label>
+        <input type="text" id="qPhone" maxlength="20" placeholder="010-0000-0000" inputmode="tel" style="max-width:260px">
         <button class="pri" id="qBtn" onclick="submitQuestion()">질문 보내기</button>
         <div class="msg" id="qMsg"></div>
       </section>
@@ -267,14 +269,17 @@ async function init(){
 /* ── 질문 ── */
 async function submitQuestion(){
   var c = document.getElementById('qContent').value.trim();
+  var ph = document.getElementById('qPhone').value.trim();
   if(!c){ setMsg('qMsg','err','내용을 입력해 주세요.'); return; }
+  if(ph && !/^[0-9+\- ]{9,20}$/.test(ph)){ setMsg('qMsg','err','전화번호 형식을 확인해 주세요. (예: 010-0000-0000)'); return; }
   var btn = document.getElementById('qBtn');
   btn.disabled = true;
-  var res = await sb.rpc('tl_submit_question', { p_token: TOKEN, p_content: c });
+  var res = await sb.rpc('tl_submit_question', { p_token: TOKEN, p_content: c, p_phone: ph || null });
   btn.disabled = false;
   if(res.error){ setMsg('qMsg','err','전송 실패: ' + res.error.message); return; }
   document.getElementById('qContent').value = '';
-  setMsg('qMsg','ok','질문이 접수되었습니다. 답변이 오면 이 페이지에 표시됩니다.');
+  document.getElementById('qPhone').value = '';
+  setMsg('qMsg','ok','질문이 접수되었습니다. 답변이 오면 이 페이지에 표시됩니다' + (ph ? ' (게시되면 문자로도 알려 드려요).' : '.'));
   loadQuestions();
 }
 async function loadQuestions(){
