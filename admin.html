@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>관리 — 사교원 사회혁신팀러닝</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{
+  --green:#4a6741; --green-dark:#395032; --green-pale:#eef2ec;
+  --ink:#2b2b28; --sub:#6b6b64; --line:#e3e1da; --bg:#f7f6f2; --card:#ffffff;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Pretendard',-apple-system,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6}
+.serif{font-family:'Noto Serif KR','Pretendard',serif}
+a{color:var(--green);text-decoration:none}
+.wrap{max-width:960px;margin:0 auto;padding:0 20px}
+
+header{background:var(--green);color:#fff;padding:14px 0}
+header .wrap{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.brand{font-weight:700;font-size:1rem}
+.brand a{color:#fff}
+#logoutBtn{display:none;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:8px;padding:6px 14px;font-size:.8rem;cursor:pointer;font-family:inherit}
+
+.auth{max-width:420px;margin:60px auto;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:34px 30px}
+.auth h1{font-size:1.15rem;font-weight:800;color:var(--green-dark);margin-bottom:4px}
+.auth p{font-size:.84rem;color:var(--sub);margin-bottom:14px}
+
+label{display:block;font-size:.84rem;font-weight:600;margin:12px 0 6px}
+input[type=text],input[type=email],input[type=password],textarea,select{width:100%;padding:10px 13px;border:1px solid var(--line);border-radius:9px;font-size:.92rem;font-family:inherit;background:#fcfcfa}
+textarea{min-height:110px;resize:vertical}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--green);border-color:transparent}
+button.pri{margin-top:14px;background:var(--green);color:#fff;border:none;border-radius:9px;padding:10px 22px;font-size:.9rem;font-weight:700;cursor:pointer;font-family:inherit}
+button.pri:hover{background:var(--green-dark)}
+button.pri:disabled{opacity:.6;cursor:default}
+button.ghost{background:#fff;color:var(--green);border:1.5px solid var(--green);border-radius:8px;padding:6px 13px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit}
+button.ghost:hover{background:var(--green);color:#fff}
+.msg{margin-top:12px;font-size:.86rem;border-radius:8px;padding:9px 13px;display:none}
+.msg.err{display:block;background:#fbeeee;color:#a33}
+.msg.ok{display:block;background:var(--green-pale);color:var(--green-dark)}
+.msg.info{display:block;background:#eef4fb;color:#33608a}
+
+#dash{display:none;padding-bottom:50px}
+.tabs{display:flex;gap:4px;margin:22px 0 0;border-bottom:2px solid var(--line);overflow-x:auto}
+.tabs button{background:none;border:none;padding:11px 15px;font-size:.9rem;font-weight:600;color:var(--sub);cursor:pointer;font-family:inherit;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-2px}
+.tabs button.on{color:var(--green-dark);border-bottom-color:var(--green)}
+.tabs button .n{display:inline-block;min-width:20px;text-align:center;background:#c9762c;color:#fff;border-radius:20px;font-size:.72rem;padding:1px 6px;margin-left:4px}
+.pane{display:none;padding:20px 0}
+.pane.on{display:block}
+
+section.blk{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:22px 20px;margin-bottom:16px}
+h2.sec{font-size:1rem;font-weight:800;color:var(--green-dark);margin-bottom:10px}
+.item{border:1px solid var(--line);border-radius:11px;padding:15px 17px;margin-bottom:12px;background:#fff}
+.item .meta{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.item .team{font-weight:700;font-size:.9rem;color:var(--green-dark)}
+.item .date{font-size:.76rem;color:var(--sub)}
+.q-content{font-size:.9rem;white-space:pre-wrap;background:#faf9f6;border-radius:8px;padding:10px 12px;margin:8px 0}
+.badge{font-size:.72rem;font-weight:700;border-radius:20px;padding:2px 10px}
+.badge.wait{background:#fff3da;color:#8a5a00}
+.badge.done{background:var(--green-pale);color:var(--green-dark)}
+.empty{color:var(--sub);font-size:.87rem;padding:12px 4px}
+details.fold summary{cursor:pointer;font-size:.83rem;color:var(--green);font-weight:600;margin:6px 0}
+table.tl{width:100%;border-collapse:collapse;font-size:.86rem}
+table.tl th{font-size:.76rem;color:var(--sub);text-align:left;padding:8px 8px;border-bottom:2px solid var(--line)}
+table.tl td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.hint{font-size:.8rem;color:var(--sub);margin-top:4px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="brand serif"><a href="index.html">사교원 사회혁신팀러닝</a> <span style="opacity:.75;font-weight:400;font-size:.85rem">관리</span></div>
+    <button id="logoutBtn" onclick="logout()">로그아웃</button>
+  </div>
+</header>
+
+<!-- 로그인 -->
+<div class="auth" id="authBox">
+  <h1 class="serif">관리자 로그인</h1>
+  <p>사회혁신교육원 관리자 계정으로 로그인하세요.</p>
+  <label for="lEmail">이메일</label>
+  <input type="email" id="lEmail" autocomplete="username">
+  <label for="lPw">비밀번호</label>
+  <input type="password" id="lPw" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
+  <button class="pri" onclick="login()">로그인</button>
+  <div class="msg" id="loginMsg"></div>
+</div>
+
+<!-- 대시보드 -->
+<main class="wrap" id="dash">
+  <div class="tabs">
+    <button id="tabq" class="on" onclick="showTab('q')">💬 질문함<span class="n" id="nQ" style="display:none"></span></button>
+    <button id="tabp" onclick="showTab('p')">📝 계획안함<span class="n" id="nP" style="display:none"></span></button>
+    <button id="tabr" onclick="showTab('r')">📚 조사요청함<span class="n" id="nR" style="display:none"></span></button>
+    <button id="tabt" onclick="showTab('t')">👥 팀 목록</button>
+    <button id="tabrep" onclick="showTab('rep')">📊 보고서 발행</button>
+  </div>
+
+  <div class="pane on" id="pane-q">
+    <section class="blk">
+      <h2 class="sec serif">답변 대기 질문</h2>
+      <p class="hint">클로드코드(데카)와 함께 답변 초안을 만든 뒤, AI 분석과 추가 조언을 넣고 게시하세요.</p>
+      <div id="qWait" style="margin-top:10px"><div class="empty">불러오는 중...</div></div>
+    </section>
+    <section class="blk">
+      <details class="fold"><summary>답변 완료된 질문 보기</summary><div id="qDone"></div></details>
+    </section>
+  </div>
+
+  <div class="pane" id="pane-p">
+    <section class="blk">
+      <h2 class="sec serif">보완 대기 계획안</h2>
+      <div id="pWait" style="margin-top:6px"><div class="empty">불러오는 중...</div></div>
+    </section>
+    <section class="blk">
+      <details class="fold"><summary>보완 완료된 계획안 보기</summary><div id="pDone"></div></details>
+    </section>
+  </div>
+
+  <div class="pane" id="pane-r">
+    <section class="blk">
+      <h2 class="sec serif">조사 대기 요청</h2>
+      <div id="rWait" style="margin-top:6px"><div class="empty">불러오는 중...</div></div>
+    </section>
+    <section class="blk">
+      <details class="fold"><summary>게시 완료된 조사자료 보기</summary><div id="rDone"></div></details>
+    </section>
+  </div>
+
+  <div class="pane" id="pane-t">
+    <section class="blk">
+      <h2 class="sec serif">등록된 팀</h2>
+      <div id="tList"><div class="empty">불러오는 중...</div></div>
+      <div class="msg" id="tMsg"></div>
+    </section>
+  </div>
+
+  <div class="pane" id="pane-rep">
+    <section class="blk">
+      <h2 class="sec serif">최종 보고 발행</h2>
+      <p class="hint">팀러닝이 끝난 팀의 전 과정을 종합요약해 발행합니다. 같은 팀에 다시 발행하면 내용이 갱신됩니다.</p>
+      <label for="repTeam">팀 선택</label>
+      <select id="repTeam"></select>
+      <label for="repTitle">보고서 제목</label>
+      <input type="text" id="repTitle" placeholder="예: ○○팀 팀러닝 최종 보고">
+      <label for="repContent">보고서 내용 (## 제목, - 목록, **굵게** 사용 가능)</label>
+      <textarea id="repContent" style="min-height:300px" placeholder="## 팀러닝 개요&#10;...&#10;## 주요 질문과 배움&#10;...&#10;## 계획안 발전 과정&#10;...&#10;## 종합 제언"></textarea>
+      <button class="pri" onclick="publishReport()">보고서 발행</button>
+      <div class="msg" id="repMsg"></div>
+    </section>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+var SB_URL = 'https://gklecgujcoznxyvywnyu.supabase.co';
+var SB_KEY = 'sb_publishable_gedQpfHqmnd1hlGNnrglLw_n5b3f3YN';
+var sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+var teams = [];
+
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtDT(iso){
+  if(!iso) return '';
+  var d = new Date(iso);
+  function p(n){ return (n<10?'0':'')+n; }
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+function setMsg(id, cls, text){
+  var m = document.getElementById(id);
+  m.className = 'msg ' + cls; m.textContent = text;
+}
+function showTab(t){
+  ['q','p','r','t','rep'].forEach(function(k){
+    document.getElementById('tab'+k).className = (k===t) ? 'on' : '';
+    document.getElementById('pane-'+k).className = (k===t) ? 'pane on' : 'pane';
+  });
+}
+function setCount(id, n){
+  var el = document.getElementById(id);
+  if(n > 0){ el.style.display = 'inline-block'; el.textContent = n; }
+  else el.style.display = 'none';
+}
+
+/* ── 인증 ── */
+async function login(){
+  var email = document.getElementById('lEmail').value.trim();
+  var pw = document.getElementById('lPw').value;
+  if(!email || !pw){ setMsg('loginMsg','err','이메일과 비밀번호를 입력하세요.'); return; }
+  var res = await sb.auth.signInWithPassword({ email: email, password: pw });
+  if(res.error){ setMsg('loginMsg','err','로그인 실패: ' + res.error.message); return; }
+  var adm = await sb.rpc('is_admin');
+  if(adm.data !== true){
+    await sb.auth.signOut();
+    setMsg('loginMsg','err','관리자 계정이 아닙니다.');
+    return;
+  }
+  showDash();
+}
+async function logout(){ await sb.auth.signOut(); location.reload(); }
+async function init(){
+  var res = await sb.auth.getSession();
+  var session = res.data ? res.data.session : null;
+  if(!session || !session.user) return;
+  var adm = await sb.rpc('is_admin');
+  if(adm.data !== true){ await sb.auth.signOut(); return; }
+  showDash();
+}
+function showDash(){
+  document.getElementById('authBox').style.display = 'none';
+  document.getElementById('dash').style.display = 'block';
+  document.getElementById('logoutBtn').style.display = 'inline-block';
+  loadTeams(); loadQuestions(); loadPlans(); loadResearch();
+}
+
+/* ── 팀 목록 ── */
+function teamLink(token){
+  return location.href.replace(/admin\.html.*$/,'') + 'team.html?t=' + token;
+}
+function copyTL(token){
+  var text = teamLink(token);
+  function done(){ setMsg('tMsg','ok','팀 전용 링크가 복사되었습니다.'); }
+  function fallback(){
+    var ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); done(); } catch(e){ setMsg('tMsg','err','복사 실패'); }
+    document.body.removeChild(ta);
+  }
+  if(navigator.clipboard && window.isSecureContext){ navigator.clipboard.writeText(text).then(done, fallback); }
+  else { fallback(); }
+}
+async function loadTeams(){
+  var res = await sb.from('tl_teams').select('*').order('created_at', {ascending:false});
+  var el = document.getElementById('tList');
+  if(res.error){ el.innerHTML = '<div class="empty">불러오기 실패: ' + esc(res.error.message) + '</div>'; return; }
+  teams = res.data;
+  var sel = document.getElementById('repTeam');
+  sel.innerHTML = '<option value="">— 팀 선택 —</option>' + teams.map(function(t){
+    return '<option value="' + esc(t.id) + '">' + esc(t.name) + (t.topic ? ' (' + esc(t.topic) + ')' : '') + '</option>';
+  }).join('');
+  if(!teams.length){ el.innerHTML = '<div class="empty">등록된 팀이 없습니다.</div>'; return; }
+  el.innerHTML = '<table class="tl"><tr><th>팀명</th><th>팀러닝 주제</th><th>등록일</th><th></th></tr>'
+    + teams.map(function(t){
+      return '<tr><td><b>' + esc(t.name) + '</b></td><td>' + esc(t.topic) + '</td>'
+        + '<td style="white-space:nowrap">' + fmtDT(t.created_at).slice(0,10) + '</td>'
+        + '<td style="white-space:nowrap"><button class="ghost" onclick="copyTL(\'' + esc(t.token) + '\')">🔗 링크 복사</button> '
+        + '<a class="ghost" style="display:inline-block;padding:6px 13px" href="team.html?t=' + esc(t.token) + '" target="_blank">보기</a></td></tr>';
+    }).join('') + '</table>';
+}
+
+/* ── 질문함 ── */
+async function loadQuestions(){
+  var res = await sb.from('tl_questions').select('*, tl_teams(name)').order('created_at', {ascending:false});
+  var w = document.getElementById('qWait'), d = document.getElementById('qDone');
+  if(res.error){ w.innerHTML = '<div class="empty">불러오기 실패: ' + esc(res.error.message) + '</div>'; return; }
+  var wait = res.data.filter(function(q){ return q.status !== '답변완료'; });
+  var done = res.data.filter(function(q){ return q.status === '답변완료'; });
+  setCount('nQ', wait.length);
+  w.innerHTML = wait.length ? wait.map(function(q){
+    return '<div class="item">'
+      + '<div class="meta"><span class="team">' + esc(q.tl_teams ? q.tl_teams.name : '?') + '</span><span class="date">' + fmtDT(q.created_at) + '</span></div>'
+      + '<div class="q-content">' + esc(q.content) + '</div>'
+      + '<label>🤖 AI 분석 (데카와 만든 초안)</label>'
+      + '<textarea id="qa' + q.id + '"></textarea>'
+      + '<label>🌱 이사장 추가 조언</label>'
+      + '<textarea id="qv' + q.id + '" style="min-height:70px"></textarea>'
+      + '<button class="pri" onclick="publishAnswer(' + q.id + ')">답변 게시</button>'
+      + '<div class="msg" id="qm' + q.id + '"></div>'
+      + '</div>';
+  }).join('') : '<div class="empty">대기 중인 질문이 없습니다.</div>';
+  d.innerHTML = done.length ? done.map(function(q){
+    return '<div class="item"><div class="meta"><span class="team">' + esc(q.tl_teams ? q.tl_teams.name : '?') + '</span>'
+      + '<span class="badge done">답변완료 ' + fmtDT(q.answered_at) + '</span></div>'
+      + '<div class="q-content">' + esc(q.content) + '</div>'
+      + (q.ai_answer ? '<div class="q-content" style="background:#f2f6f0">🤖 ' + esc(q.ai_answer) + '</div>' : '')
+      + (q.advice ? '<div class="q-content" style="background:#eef2ec">🌱 ' + esc(q.advice) + '</div>' : '')
+      + '</div>';
+  }).join('') : '<div class="empty">답변 완료된 질문이 없습니다.</div>';
+}
+async function publishAnswer(id){
+  var ai = document.getElementById('qa'+id).value.trim();
+  var adv = document.getElementById('qv'+id).value.trim();
+  if(!ai && !adv){ setMsg('qm'+id,'err','AI 분석 또는 조언 중 하나는 입력해야 합니다.'); return; }
+  var res = await sb.from('tl_questions').update({
+    ai_answer: ai || null, advice: adv || null,
+    status: '답변완료', answered_at: new Date().toISOString()
+  }).eq('id', id);
+  if(res.error){ setMsg('qm'+id,'err','게시 실패: ' + res.error.message); return; }
+  loadQuestions();
+}
+
+/* ── 계획안함 ── */
+async function loadPlans(){
+  var res = await sb.from('tl_plans').select('*, tl_teams(name)').order('created_at', {ascending:false});
+  var w = document.getElementById('pWait'), d = document.getElementById('pDone');
+  if(res.error){ w.innerHTML = '<div class="empty">불러오기 실패: ' + esc(res.error.message) + '</div>'; return; }
+  var wait = res.data.filter(function(p){ return p.status !== '보완완료'; });
+  var done = res.data.filter(function(p){ return p.status === '보완완료'; });
+  setCount('nP', wait.length);
+  w.innerHTML = wait.length ? wait.map(function(p){
+    return '<div class="item">'
+      + '<div class="meta"><span class="team">' + esc(p.tl_teams ? p.tl_teams.name : '?') + ' — ' + esc(p.title || '(제목 없음)') + '</span><span class="date">' + fmtDT(p.created_at) + '</span></div>'
+      + '<details class="fold"><summary>계획안 원문 보기</summary><div class="q-content">' + esc(p.content) + '</div></details>'
+      + '<label>🌱 보완 계획서 (## 제목, - 목록, **굵게** 사용 가능)</label>'
+      + '<textarea id="pr' + p.id + '" style="min-height:220px"></textarea>'
+      + '<button class="pri" onclick="publishReview(' + p.id + ')">보완 계획서 게시</button>'
+      + '<div class="msg" id="pm' + p.id + '"></div>'
+      + '</div>';
+  }).join('') : '<div class="empty">대기 중인 계획안이 없습니다.</div>';
+  d.innerHTML = done.length ? done.map(function(p){
+    return '<div class="item"><div class="meta"><span class="team">' + esc(p.tl_teams ? p.tl_teams.name : '?') + ' — ' + esc(p.title || '(제목 없음)') + '</span>'
+      + '<span class="badge done">보완완료 ' + fmtDT(p.reviewed_at) + '</span></div>'
+      + '<details class="fold"><summary>내용 보기</summary>'
+      + '<div class="q-content">' + esc(p.content) + '</div>'
+      + '<div class="q-content" style="background:#eef2ec">' + esc(p.review) + '</div></details>'
+      + '</div>';
+  }).join('') : '<div class="empty">보완 완료된 계획안이 없습니다.</div>';
+}
+async function publishReview(id){
+  var rv = document.getElementById('pr'+id).value.trim();
+  if(!rv){ setMsg('pm'+id,'err','보완 계획서 내용을 입력해 주세요.'); return; }
+  var res = await sb.from('tl_plans').update({
+    review: rv, status: '보완완료', reviewed_at: new Date().toISOString()
+  }).eq('id', id);
+  if(res.error){ setMsg('pm'+id,'err','게시 실패: ' + res.error.message); return; }
+  loadPlans();
+}
+
+/* ── 조사요청함 ── */
+async function loadResearch(){
+  var res = await sb.from('tl_research').select('*, tl_teams(name)').order('created_at', {ascending:false});
+  var w = document.getElementById('rWait'), d = document.getElementById('rDone');
+  if(res.error){ w.innerHTML = '<div class="empty">불러오기 실패: ' + esc(res.error.message) + '</div>'; return; }
+  var wait = res.data.filter(function(r){ return r.status !== '게시완료'; });
+  var done = res.data.filter(function(r){ return r.status === '게시완료'; });
+  setCount('nR', wait.length);
+  w.innerHTML = wait.length ? wait.map(function(r){
+    return '<div class="item">'
+      + '<div class="meta"><span class="team">' + esc(r.tl_teams ? r.tl_teams.name : '?') + ' — 📚 ' + esc(r.topic) + '</span><span class="date">' + fmtDT(r.created_at) + '</span></div>'
+      + (r.note ? '<div class="q-content">' + esc(r.note) + '</div>' : '')
+      + '<label>🌱 조사자료 (## 제목, - 목록, **굵게** 사용 가능)</label>'
+      + '<textarea id="rm' + r.id + '" style="min-height:220px"></textarea>'
+      + '<button class="pri" onclick="publishMaterials(' + r.id + ')">조사자료 게시</button>'
+      + '<div class="msg" id="rmsg' + r.id + '"></div>'
+      + '</div>';
+  }).join('') : '<div class="empty">대기 중인 조사 요청이 없습니다.</div>';
+  d.innerHTML = done.length ? done.map(function(r){
+    return '<div class="item"><div class="meta"><span class="team">' + esc(r.tl_teams ? r.tl_teams.name : '?') + ' — 📚 ' + esc(r.topic) + '</span>'
+      + '<span class="badge done">게시완료 ' + fmtDT(r.published_at) + '</span></div>'
+      + '<details class="fold"><summary>자료 보기</summary><div class="q-content" style="background:#eef2ec">' + esc(r.materials) + '</div></details>'
+      + '</div>';
+  }).join('') : '<div class="empty">게시 완료된 조사자료가 없습니다.</div>';
+}
+async function publishMaterials(id){
+  var m = document.getElementById('rm'+id).value.trim();
+  if(!m){ setMsg('rmsg'+id,'err','조사자료 내용을 입력해 주세요.'); return; }
+  var res = await sb.from('tl_research').update({
+    materials: m, status: '게시완료', published_at: new Date().toISOString()
+  }).eq('id', id);
+  if(res.error){ setMsg('rmsg'+id,'err','게시 실패: ' + res.error.message); return; }
+  loadResearch();
+}
+
+/* ── 보고서 발행 ── */
+async function publishReport(){
+  var teamId = document.getElementById('repTeam').value;
+  var title = document.getElementById('repTitle').value.trim();
+  var content = document.getElementById('repContent').value.trim();
+  if(!teamId){ setMsg('repMsg','err','팀을 선택해 주세요.'); return; }
+  if(!content){ setMsg('repMsg','err','보고서 내용을 입력해 주세요.'); return; }
+  var res = await sb.from('tl_reports').upsert({
+    team_id: teamId, title: title, content: content,
+    published_at: new Date().toISOString()
+  });
+  if(res.error){ setMsg('repMsg','err','발행 실패: ' + res.error.message); return; }
+  var t = teams.find(function(x){ return x.id === teamId; });
+  setMsg('repMsg','ok','발행 완료! 팀 공간의 "최종 보고" 탭에서 볼 수 있습니다.'
+    + (t ? ' (' + t.name + ')' : ''));
+  document.getElementById('repTitle').value = ''; document.getElementById('repContent').value = '';
+}
+
+init();
+</script>
+</body>
+</html>
