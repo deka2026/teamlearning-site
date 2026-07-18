@@ -159,6 +159,7 @@ var SB_KEY = 'sb_publishable_gedQpfHqmnd1hlGNnrglLw_n5b3f3YN';
 var sb = window.supabase.createClient(SB_URL, SB_KEY);
 
 var teams = [];
+var qCache = {}, pCache = {}, rCache = {};
 
 function esc(s){
   return String(s == null ? '' : s)
@@ -259,6 +260,8 @@ async function loadQuestions(){
   if(res.error){ w.innerHTML = '<div class="empty">불러오기 실패: ' + esc(res.error.message) + '</div>'; return; }
   var wait = res.data.filter(function(q){ return q.status !== '답변완료'; });
   var done = res.data.filter(function(q){ return q.status === '답변완료'; });
+  qCache = {};
+  res.data.forEach(function(q){ qCache[q.id] = q; });
   setCount('nQ', wait.length);
   w.innerHTML = wait.length ? wait.map(function(q){
     return '<div class="item">'
@@ -273,13 +276,26 @@ async function loadQuestions(){
       + '</div>';
   }).join('') : '<div class="empty">대기 중인 질문이 없습니다.</div>';
   d.innerHTML = done.length ? done.map(function(q){
-    return '<div class="item"><div class="meta"><span class="team">' + esc(q.tl_teams ? q.tl_teams.name : '?') + '</span>'
+    return '<div class="item" id="qitem' + q.id + '"><div class="meta"><span class="team">' + esc(q.tl_teams ? q.tl_teams.name : '?') + '</span>'
       + '<span class="badge done">답변완료 ' + fmtDT(q.answered_at) + '</span></div>'
       + '<div class="q-content">' + esc(q.content) + '</div>'
       + (q.ai_answer ? '<div class="q-content" style="background:#f2f6f0">🤖 ' + esc(q.ai_answer) + '</div>' : '')
       + (q.advice ? '<div class="q-content" style="background:#eef2ec">🌱 ' + esc(q.advice) + '</div>' : '')
+      + '<button class="ghost" onclick="editAnswer(' + q.id + ')">✏️ 답변 수정</button>'
       + '</div>';
   }).join('') : '<div class="empty">답변 완료된 질문이 없습니다.</div>';
+}
+function editAnswer(id){
+  var q = qCache[id]; if(!q) return;
+  document.getElementById('qitem'+id).innerHTML =
+    '<div class="meta"><span class="team">' + esc(q.tl_teams ? q.tl_teams.name : '?') + '</span><span class="date">' + fmtDT(q.created_at) + '</span></div>'
+    + '<div class="q-content">' + esc(q.content) + '</div>'
+    + '<label>🤖 AI 분석 (데카와 만든 초안)</label>'
+    + '<textarea id="qa' + id + '">' + esc(q.ai_answer || '') + '</textarea>'
+    + '<label>🌱 이사장 추가 조언</label>'
+    + '<textarea id="qv' + id + '" style="min-height:70px">' + esc(q.advice || '') + '</textarea>'
+    + '<button class="pri" onclick="publishAnswer(' + id + ')">수정한 답변 게시</button>'
+    + '<div class="msg" id="qm' + id + '"></div>';
 }
 async function publishAnswer(id){
   var ai = document.getElementById('qa'+id).value.trim();
@@ -300,6 +316,8 @@ async function loadPlans(){
   if(res.error){ w.innerHTML = '<div class="empty">불러오기 실패: ' + esc(res.error.message) + '</div>'; return; }
   var wait = res.data.filter(function(p){ return p.status !== '보완완료'; });
   var done = res.data.filter(function(p){ return p.status === '보완완료'; });
+  pCache = {};
+  res.data.forEach(function(p){ pCache[p.id] = p; });
   setCount('nP', wait.length);
   w.innerHTML = wait.length ? wait.map(function(p){
     return '<div class="item">'
@@ -312,13 +330,24 @@ async function loadPlans(){
       + '</div>';
   }).join('') : '<div class="empty">대기 중인 계획안이 없습니다.</div>';
   d.innerHTML = done.length ? done.map(function(p){
-    return '<div class="item"><div class="meta"><span class="team">' + esc(p.tl_teams ? p.tl_teams.name : '?') + ' — ' + esc(p.title || '(제목 없음)') + '</span>'
+    return '<div class="item" id="pitem' + p.id + '"><div class="meta"><span class="team">' + esc(p.tl_teams ? p.tl_teams.name : '?') + ' — ' + esc(p.title || '(제목 없음)') + '</span>'
       + '<span class="badge done">보완완료 ' + fmtDT(p.reviewed_at) + '</span></div>'
       + '<details class="fold"><summary>내용 보기</summary>'
       + '<div class="q-content">' + esc(p.content) + '</div>'
       + '<div class="q-content" style="background:#eef2ec">' + esc(p.review) + '</div></details>'
+      + '<button class="ghost" onclick="editReview(' + p.id + ')">✏️ 보완 계획서 수정</button>'
       + '</div>';
   }).join('') : '<div class="empty">보완 완료된 계획안이 없습니다.</div>';
+}
+function editReview(id){
+  var p = pCache[id]; if(!p) return;
+  document.getElementById('pitem'+id).innerHTML =
+    '<div class="meta"><span class="team">' + esc(p.tl_teams ? p.tl_teams.name : '?') + ' — ' + esc(p.title || '(제목 없음)') + '</span><span class="date">' + fmtDT(p.created_at) + '</span></div>'
+    + '<details class="fold"><summary>계획안 원문 보기</summary><div class="q-content">' + esc(p.content) + '</div></details>'
+    + '<label>🌱 보완 계획서 (## 제목, - 목록, **굵게** 사용 가능)</label>'
+    + '<textarea id="pr' + id + '" style="min-height:220px">' + esc(p.review || '') + '</textarea>'
+    + '<button class="pri" onclick="publishReview(' + id + ')">수정한 보완 계획서 게시</button>'
+    + '<div class="msg" id="pm' + id + '"></div>';
 }
 async function publishReview(id){
   var rv = document.getElementById('pr'+id).value.trim();
@@ -337,6 +366,8 @@ async function loadResearch(){
   if(res.error){ w.innerHTML = '<div class="empty">불러오기 실패: ' + esc(res.error.message) + '</div>'; return; }
   var wait = res.data.filter(function(r){ return r.status !== '게시완료'; });
   var done = res.data.filter(function(r){ return r.status === '게시완료'; });
+  rCache = {};
+  res.data.forEach(function(r){ rCache[r.id] = r; });
   setCount('nR', wait.length);
   w.innerHTML = wait.length ? wait.map(function(r){
     return '<div class="item">'
@@ -349,11 +380,22 @@ async function loadResearch(){
       + '</div>';
   }).join('') : '<div class="empty">대기 중인 조사 요청이 없습니다.</div>';
   d.innerHTML = done.length ? done.map(function(r){
-    return '<div class="item"><div class="meta"><span class="team">' + esc(r.tl_teams ? r.tl_teams.name : '?') + ' — 📚 ' + esc(r.topic) + '</span>'
+    return '<div class="item" id="ritem' + r.id + '"><div class="meta"><span class="team">' + esc(r.tl_teams ? r.tl_teams.name : '?') + ' — 📚 ' + esc(r.topic) + '</span>'
       + '<span class="badge done">게시완료 ' + fmtDT(r.published_at) + '</span></div>'
       + '<details class="fold"><summary>자료 보기</summary><div class="q-content" style="background:#eef2ec">' + esc(r.materials) + '</div></details>'
+      + '<button class="ghost" onclick="editMaterials(' + r.id + ')">✏️ 조사자료 수정</button>'
       + '</div>';
   }).join('') : '<div class="empty">게시 완료된 조사자료가 없습니다.</div>';
+}
+function editMaterials(id){
+  var r = rCache[id]; if(!r) return;
+  document.getElementById('ritem'+id).innerHTML =
+    '<div class="meta"><span class="team">' + esc(r.tl_teams ? r.tl_teams.name : '?') + ' — 📚 ' + esc(r.topic) + '</span><span class="date">' + fmtDT(r.created_at) + '</span></div>'
+    + (r.note ? '<div class="q-content">' + esc(r.note) + '</div>' : '')
+    + '<label>🌱 조사자료 (## 제목, - 목록, **굵게** 사용 가능)</label>'
+    + '<textarea id="rm' + id + '" style="min-height:220px">' + esc(r.materials || '') + '</textarea>'
+    + '<button class="pri" onclick="publishMaterials(' + id + ')">수정한 조사자료 게시</button>'
+    + '<div class="msg" id="rmsg' + id + '"></div>';
 }
 async function publishMaterials(id){
   var m = document.getElementById('rm'+id).value.trim();
