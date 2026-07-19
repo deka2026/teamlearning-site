@@ -102,8 +102,7 @@ footer{border-top:1px solid var(--line);margin-top:40px;padding:24px 0;text-alig
       <h1 class="serif" id="teamName"></h1>
       <div class="topic" id="teamTopic"></div>
       <div class="actions">
-        <button class="ghost" onclick="copyAskLink()">📋 질문입력창 링크 복사</button>
-        <button class="ghost" onclick="copyTeamLink()">🔗 팀 공간 링크 복사</button>
+        <button class="ghost" onclick="copyTeamLink()">📋 팀 링크 복사 (질문·열람 모두 이 링크 하나)</button>
       </div>
       <div class="msg" id="headMsg" style="max-width:520px"></div>
     </div>
@@ -243,8 +242,7 @@ function copyText(text, okMsg){
   } else { fallback(); }
 }
 function baseLink(){ return location.origin + location.pathname + '?t=' + TOKEN; }
-function copyAskLink(){ copyText(baseLink() + '#ask', '질문입력창 링크가 복사되었습니다. 팀원에게 공유하세요!'); }
-function copyTeamLink(){ copyText(baseLink(), '팀 공간 링크가 복사되었습니다.'); }
+function copyTeamLink(){ copyText(baseLink(), '팀 링크가 복사되었습니다. 팀원에게 공유하세요!'); }
 
 /* ── 초기화 ── */
 async function init(){
