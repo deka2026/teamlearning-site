@@ -35,6 +35,8 @@ button.pri:hover{background:var(--green-dark)}
 button.pri:disabled{opacity:.6;cursor:default}
 button.ghost{background:#fff;color:var(--green);border:1.5px solid var(--green);border-radius:8px;padding:6px 13px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit}
 button.ghost:hover{background:var(--green);color:#fff}
+button.danger{background:#fff;color:#b04a4a;border:1.5px solid #d8a3a3;border-radius:8px;padding:6px 13px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit}
+button.danger:hover{background:#b04a4a;border-color:#b04a4a;color:#fff}
 .msg{margin-top:12px;font-size:.86rem;border-radius:8px;padding:9px 13px;display:none}
 .msg.err{display:block;background:#fbeeee;color:#a33}
 .msg.ok{display:block;background:var(--green-pale);color:var(--green-dark)}
@@ -273,11 +275,12 @@ async function loadTeams(){
   }).join('');
   if(!teams.length){ el.innerHTML = '<div class="empty">등록된 팀이 없습니다.</div>'; return; }
   el.innerHTML = '<table class="tl"><tr><th>팀명</th><th>팀러닝 주제</th><th>등록일</th><th></th></tr>'
-    + teams.map(function(t){
+    + teams.map(function(t, i){
       return '<tr><td><b>' + esc(t.name) + '</b></td><td>' + esc(t.topic) + '</td>'
         + '<td style="white-space:nowrap">' + fmtDT(t.created_at).slice(0,10) + '</td>'
         + '<td style="white-space:nowrap"><button class="ghost" onclick="copyTL(\'' + esc(t.token) + '\')">🔗 링크 복사</button> '
-        + '<a class="ghost" style="display:inline-block;padding:6px 13px" href="team.html?t=' + esc(t.token) + '" target="_blank">보기</a></td></tr>';
+        + '<a class="ghost" style="display:inline-block;padding:6px 13px" href="team.html?t=' + esc(t.token) + '" target="_blank">보기</a> '
+        + '<button class="danger" onclick="delTeam(' + i + ')">🗑 팀 삭제</button></td></tr>';
     }).join('') + '</table>';
 }
 
@@ -301,7 +304,8 @@ async function loadQuestions(){
       + '<textarea id="qa' + q.id + '"></textarea>'
       + '<label>🌱 이사장 추가 조언</label>'
       + '<textarea id="qv' + q.id + '" style="min-height:70px"></textarea>'
-      + '<button class="pri" onclick="publishAnswer(' + q.id + ')">답변 게시</button>'
+      + '<button class="pri" onclick="publishAnswer(' + q.id + ')">답변 게시</button> '
+      + '<button class="danger" onclick="delItem(\'tl_questions\', ' + q.id + ', \'이 질문\')" style="margin-top:14px">🗑 삭제</button>'
       + '<div class="msg" id="qm' + q.id + '"></div>'
       + '</div>';
   }).join('') : '<div class="empty">대기 중인 질문이 없습니다.</div>';
@@ -311,7 +315,8 @@ async function loadQuestions(){
       + '<div class="q-content">' + esc(q.content) + '</div>'
       + (q.ai_answer ? '<div class="q-content" style="background:#f2f6f0">🤖 ' + esc(q.ai_answer) + '</div>' : '')
       + (q.advice ? '<div class="q-content" style="background:#eef2ec">🌱 ' + esc(q.advice) + '</div>' : '')
-      + '<button class="ghost" onclick="editAnswer(' + q.id + ')">✏️ 답변 수정</button>'
+      + '<button class="ghost" onclick="editAnswer(' + q.id + ')">✏️ 답변 수정</button> '
+      + '<button class="danger" onclick="delItem(\'tl_questions\', ' + q.id + ', \'이 질문과 답변\')">🗑 삭제</button>'
       + '</div>';
   }).join('') : '<div class="empty">답변 완료된 질문이 없습니다.</div>';
 }
@@ -380,7 +385,8 @@ async function loadPlans(){
       + '<details class="fold"><summary>계획안 원문 보기</summary><div class="q-content">' + esc(p.content) + '</div></details>'
       + '<label>🌱 보완 계획서 (## 제목, - 목록, **굵게** 사용 가능)</label>'
       + '<textarea id="pr' + p.id + '" style="min-height:220px"></textarea>'
-      + '<button class="pri" onclick="publishReview(' + p.id + ')">보완 계획서 게시</button>'
+      + '<button class="pri" onclick="publishReview(' + p.id + ')">보완 계획서 게시</button> '
+      + '<button class="danger" onclick="delItem(\'tl_plans\', ' + p.id + ', \'이 계획안\')" style="margin-top:14px">🗑 삭제</button>'
       + '<div class="msg" id="pm' + p.id + '"></div>'
       + '</div>';
   }).join('') : '<div class="empty">대기 중인 계획안이 없습니다.</div>';
@@ -390,7 +396,8 @@ async function loadPlans(){
       + '<details class="fold"><summary>내용 보기</summary>'
       + '<div class="q-content">' + esc(p.content) + '</div>'
       + '<div class="q-content" style="background:#eef2ec">' + esc(p.review) + '</div></details>'
-      + '<button class="ghost" onclick="editReview(' + p.id + ')">✏️ 보완 계획서 수정</button>'
+      + '<button class="ghost" onclick="editReview(' + p.id + ')">✏️ 보완 계획서 수정</button> '
+      + '<button class="danger" onclick="delItem(\'tl_plans\', ' + p.id + ', \'이 계획안과 보완 계획서\')">🗑 삭제</button>'
       + '</div>';
   }).join('') : '<div class="empty">보완 완료된 계획안이 없습니다.</div>';
 }
@@ -430,7 +437,8 @@ async function loadResearch(){
       + (r.note ? '<div class="q-content">' + esc(r.note) + '</div>' : '')
       + '<label>🌱 조사자료 (## 제목, - 목록, **굵게** 사용 가능)</label>'
       + '<textarea id="rm' + r.id + '" style="min-height:220px"></textarea>'
-      + '<button class="pri" onclick="publishMaterials(' + r.id + ')">조사자료 게시</button>'
+      + '<button class="pri" onclick="publishMaterials(' + r.id + ')">조사자료 게시</button> '
+      + '<button class="danger" onclick="delItem(\'tl_research\', ' + r.id + ', \'이 조사 요청\')" style="margin-top:14px">🗑 삭제</button>'
       + '<div class="msg" id="rmsg' + r.id + '"></div>'
       + '</div>';
   }).join('') : '<div class="empty">대기 중인 조사 요청이 없습니다.</div>';
@@ -438,7 +446,8 @@ async function loadResearch(){
     return '<div class="item" id="ritem' + r.id + '"><div class="meta"><span class="team">' + esc(r.tl_teams ? r.tl_teams.name : '?') + ' — 📚 ' + esc(r.topic) + '</span>'
       + '<span class="badge done">게시완료 ' + fmtDT(r.published_at) + '</span></div>'
       + '<details class="fold"><summary>자료 보기</summary><div class="q-content" style="background:#eef2ec">' + esc(r.materials) + '</div></details>'
-      + '<button class="ghost" onclick="editMaterials(' + r.id + ')">✏️ 조사자료 수정</button>'
+      + '<button class="ghost" onclick="editMaterials(' + r.id + ')">✏️ 조사자료 수정</button> '
+      + '<button class="danger" onclick="delItem(\'tl_research\', ' + r.id + ', \'이 조사자료\')">🗑 삭제</button>'
       + '</div>';
   }).join('') : '<div class="empty">게시 완료된 조사자료가 없습니다.</div>';
 }
@@ -475,7 +484,8 @@ async function loadNotifications(){
       + '<div class="meta"><span class="team">📞 ' + esc(n.phone) + '</span><span class="date">' + fmtDT(n.created_at) + '</span></div>'
       + '<div class="q-content" id="nmsg' + n.id + '">' + esc(n.message) + '</div>'
       + '<button class="ghost" onclick="copyNotif(' + n.id + ')">📋 메시지 복사</button> '
-      + '<button class="ghost" onclick="markSent(' + n.id + ')">✅ 발송완료 처리</button>'
+      + '<button class="ghost" onclick="markSent(' + n.id + ')">✅ 발송완료 처리</button> '
+      + '<button class="danger" onclick="delItem(\'tl_notifications\', ' + n.id + ', \'이 알림\')">🗑 삭제</button>'
       + '</div>';
   }).join('') : '<div class="empty">발송 대기 중인 알림이 없습니다.</div>';
   d.innerHTML = done.length ? done.map(function(n){
@@ -502,6 +512,26 @@ async function markSent(id){
   }).eq('id', id);
   if(res.error){ setMsg('nMsg','err','처리 실패: ' + res.error.message); return; }
   loadNotifications();
+}
+
+/* ── 삭제 (관리자 전용) ── */
+function reloadAll(){
+  loadTeams(); loadQuestions(); loadPlans(); loadResearch(); loadNotifications();
+}
+async function delItem(table, id, label){
+  if(!confirm(label + '을(를) 삭제할까요?\n삭제하면 팀 공간에서도 사라지며 되돌릴 수 없습니다.')) return;
+  var res = await sb.from(table).delete().eq('id', id);
+  if(res.error){ alert('삭제 실패: ' + res.error.message); return; }
+  reloadAll();
+}
+async function delTeam(i){
+  var t = teams[i]; if(!t) return;
+  if(!confirm('팀 "' + t.name + '"을(를) 삭제할까요?\n이 팀의 질문·계획안·조사자료·최종보고가 전부 함께 삭제됩니다.')) return;
+  if(!confirm('정말 삭제합니다. 되돌릴 수 없습니다.\n팀 "' + t.name + '" — 계속할까요?')) return;
+  var res = await sb.from('tl_teams').delete().eq('id', t.id);
+  if(res.error){ alert('삭제 실패: ' + res.error.message); return; }
+  setMsg('tMsg','ok','팀 "' + t.name + '"과 관련 게시글이 모두 삭제되었습니다.');
+  reloadAll();
 }
 
 /* ── 보고서 발행 ── */
