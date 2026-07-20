@@ -25,6 +25,8 @@ header .wrap{display:flex;justify-content:space-between;align-items:center;gap:1
 .auth{max-width:420px;margin:60px auto;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:34px 30px}
 .auth h1{font-size:1.15rem;font-weight:800;color:var(--green-dark);margin-bottom:4px}
 .auth p{font-size:.84rem;color:var(--sub);margin-bottom:14px}
+.atab{background:none;border:none;padding:9px 14px;font-size:.9rem;font-weight:600;color:var(--sub);cursor:pointer;font-family:inherit;border-bottom:3px solid transparent;margin-bottom:-2px}
+.atab.on{color:var(--green-dark);border-bottom-color:var(--green)}
 
 label{display:block;font-size:.84rem;font-weight:600;margin:12px 0 6px}
 input[type=text],input[type=email],input[type=password],textarea,select{width:100%;padding:10px 13px;border:1px solid var(--line);border-radius:9px;font-size:.92rem;font-family:inherit;background:#fcfcfa}
@@ -77,15 +79,35 @@ table.tl td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:m
   </div>
 </header>
 
-<!-- 로그인 -->
+<!-- 로그인 / 관리자 신청 -->
 <div class="auth" id="authBox">
-  <h1 class="serif">관리자 로그인</h1>
-  <p>사회혁신교육원 관리자 계정으로 로그인하세요.</p>
-  <label for="lEmail">이메일</label>
-  <input type="email" id="lEmail" autocomplete="username">
-  <label for="lPw">비밀번호</label>
-  <input type="password" id="lPw" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
-  <button class="pri" onclick="login()">로그인</button>
+  <div style="display:flex;gap:4px;border-bottom:2px solid var(--line);margin-bottom:16px">
+    <button id="atabLogin" class="atab on" onclick="switchAuthTab('login')">로그인</button>
+    <button id="atabSignup" class="atab" onclick="switchAuthTab('signup')">관리자 신청</button>
+  </div>
+
+  <div id="loginPane">
+    <h1 class="serif">관리자 로그인</h1>
+    <p>사회혁신교육원 관리자 계정으로 로그인하세요.</p>
+    <label for="lEmail">이메일</label>
+    <input type="email" id="lEmail" autocomplete="username">
+    <label for="lPw">비밀번호</label>
+    <input type="password" id="lPw" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
+    <button class="pri" onclick="login()">로그인</button>
+  </div>
+
+  <div id="signupPane" style="display:none">
+    <h1 class="serif">관리자 신청</h1>
+    <p>신청 후 최고관리자가 승인하면 로그인할 수 있습니다.</p>
+    <label for="sName">이름</label>
+    <input type="text" id="sName" maxlength="30" placeholder="예: 김민수">
+    <label for="sEmail">이메일</label>
+    <input type="email" id="sEmail" autocomplete="username">
+    <label for="sPw">비밀번호 (6자 이상)</label>
+    <input type="password" id="sPw" autocomplete="new-password" onkeydown="if(event.key==='Enter')signup()">
+    <button class="pri" onclick="signup()">신청하기</button>
+  </div>
+
   <div class="msg" id="loginMsg"></div>
 </div>
 
@@ -98,6 +120,7 @@ table.tl td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:m
     <button id="tabn" onclick="showTab('n')">📨 알림함<span class="n" id="nN" style="display:none"></span></button>
     <button id="tabt" onclick="showTab('t')">👥 팀 목록</button>
     <button id="tabrep" onclick="showTab('rep')">📊 보고서 발행</button>
+    <button id="tabadm" onclick="showTab('adm')" style="display:none">🔑 관리자<span class="n" id="nA" style="display:none"></span></button>
   </div>
 
   <div class="pane on" id="pane-q">
@@ -152,6 +175,15 @@ table.tl td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:m
     </section>
   </div>
 
+  <div class="pane" id="pane-adm">
+    <section class="blk">
+      <h2 class="sec serif">관리자 관리 <span style="font-size:.75rem;color:#c9762c">최고관리자 전용</span></h2>
+      <p class="hint">"관리자 신청"으로 들어온 사람을 승인하면 이 관리페이지의 모든 기능(질문·계획안·조사·알림·보고서)을 쓸 수 있습니다.<br>관리자 관리(이 탭)는 최고관리자만 볼 수 있어요. 승인 해제하면 즉시 접근이 막힙니다.</p>
+      <div id="admList" style="margin-top:10px"><div class="empty">불러오는 중...</div></div>
+      <div class="msg" id="admMsg"></div>
+    </section>
+  </div>
+
   <div class="pane" id="pane-rep">
     <section class="blk">
       <h2 class="sec serif">최종 보고 발행</h2>
@@ -200,7 +232,7 @@ function setMsg(id, cls, text){
   m.className = 'msg ' + cls; m.textContent = text;
 }
 function showTab(t){
-  ['q','p','r','n','t','rep'].forEach(function(k){
+  ['q','p','r','n','t','rep','adm'].forEach(function(k){
     document.getElementById('tab'+k).className = (k===t) ? 'on' : '';
     document.getElementById('pane-'+k).className = (k===t) ? 'pane on' : 'pane';
   });
@@ -210,6 +242,14 @@ function showTab(t){
   else if(t==='r') loadResearch();
   else if(t==='n') loadNotifications();
   else if(t==='t') loadTeams();
+  else if(t==='adm') loadAdmins();
+}
+function switchAuthTab(t){
+  document.getElementById('atabLogin').className = 'atab' + (t==='login' ? ' on' : '');
+  document.getElementById('atabSignup').className = 'atab' + (t==='signup' ? ' on' : '');
+  document.getElementById('loginPane').style.display = t==='login' ? 'block' : 'none';
+  document.getElementById('signupPane').style.display = t==='signup' ? 'block' : 'none';
+  document.getElementById('loginMsg').className = 'msg';
 }
 function setCount(id, n){
   var el = document.getElementById(id);
@@ -218,34 +258,113 @@ function setCount(id, n){
 }
 
 /* ── 인증 ── */
+var isSuper = false;
+
+/* 승인 확인: 최고관리자(is_admin) 또는 승인된 팀러닝 관리자(tl_is_admin) */
+async function checkAccess(){
+  var sup = await sb.rpc('is_admin');
+  isSuper = (sup.data === true);
+  if(isSuper) return true;
+  var adm = await sb.rpc('tl_is_admin');
+  return adm.data === true;
+}
+
 async function login(){
   var email = document.getElementById('lEmail').value.trim();
   var pw = document.getElementById('lPw').value;
   if(!email || !pw){ setMsg('loginMsg','err','이메일과 비밀번호를 입력하세요.'); return; }
   var res = await sb.auth.signInWithPassword({ email: email, password: pw });
   if(res.error){ setMsg('loginMsg','err','로그인 실패: ' + res.error.message); return; }
-  var adm = await sb.rpc('is_admin');
-  if(adm.data !== true){
+  if(!(await checkAccess())){
+    var row = await sb.from('tl_admins').select('approved').eq('email', email).maybeSingle();
     await sb.auth.signOut();
-    setMsg('loginMsg','err','관리자 계정이 아닙니다.');
+    if(row.data && !row.data.approved){
+      setMsg('loginMsg','info','승인 대기 중입니다. 최고관리자가 승인하면 로그인할 수 있어요.');
+    } else {
+      setMsg('loginMsg','err','관리자 계정이 아닙니다. 먼저 "관리자 신청"을 해주세요.');
+    }
     return;
   }
   showDash();
 }
+
+async function signup(){
+  var name = document.getElementById('sName').value.trim();
+  var email = document.getElementById('sEmail').value.trim();
+  var pw = document.getElementById('sPw').value;
+  if(!name || !email || !pw){ setMsg('loginMsg','err','이름·이메일·비밀번호를 모두 입력하세요.'); return; }
+  if(pw.length < 6){ setMsg('loginMsg','err','비밀번호는 6자 이상이어야 합니다.'); return; }
+  var res = await sb.auth.signUp({ email: email, password: pw });
+  if(res.error){
+    if(/already/i.test(res.error.message)){
+      setMsg('loginMsg','err','이미 가입된 이메일입니다. 로그인 탭에서 로그인해 보세요.');
+    } else {
+      setMsg('loginMsg','err','신청 실패: ' + res.error.message);
+    }
+    return;
+  }
+  var ins = await sb.from('tl_admins').insert({ email: email, name: name });
+  await sb.auth.signOut();
+  if(ins.error && ins.error.code !== '23505'){  // 23505=이미 신청됨
+    setMsg('loginMsg','err','명부 등록 실패: ' + ins.error.message);
+    return;
+  }
+  switchAuthTab('login');
+  setMsg('loginMsg','ok','신청 완료! 최고관리자가 승인하면 로그인할 수 있습니다.');
+}
+
 async function logout(){ await sb.auth.signOut(); location.reload(); }
 async function init(){
   var res = await sb.auth.getSession();
   var session = res.data ? res.data.session : null;
   if(!session || !session.user) return;
-  var adm = await sb.rpc('is_admin');
-  if(adm.data !== true){ await sb.auth.signOut(); return; }
+  if(!(await checkAccess())){ await sb.auth.signOut(); return; }
   showDash();
 }
 function showDash(){
   document.getElementById('authBox').style.display = 'none';
   document.getElementById('dash').style.display = 'block';
   document.getElementById('logoutBtn').style.display = 'inline-block';
+  if(isSuper){
+    document.getElementById('tabadm').style.display = 'inline-block';
+    loadAdmins();
+  }
   loadTeams(); loadQuestions(); loadPlans(); loadResearch(); loadNotifications();
+}
+
+/* ── 관리자 관리 (최고관리자 전용) ── */
+async function loadAdmins(){
+  if(!isSuper) return;
+  var res = await sb.from('tl_admins').select('*').order('created_at', {ascending:false});
+  var el = document.getElementById('admList');
+  if(res.error){ el.innerHTML = '<div class="empty">불러오기 실패: ' + esc(res.error.message) + ' (db-schema4.sql 실행 여부 확인)</div>'; return; }
+  var wait = res.data.filter(function(a){ return !a.approved; });
+  setCount('nA', wait.length);
+  if(!res.data.length){ el.innerHTML = '<div class="empty">신청한 관리자가 없습니다. 관리페이지 첫 화면의 "관리자 신청" 탭으로 신청을 받으세요.</div>'; return; }
+  el.innerHTML = '<table class="tl"><tr><th>이름</th><th>이메일</th><th>상태</th><th>신청일</th><th></th></tr>'
+    + res.data.map(function(a){
+      return '<tr><td><b>' + esc(a.name) + '</b></td><td>' + esc(a.email) + '</td>'
+        + '<td>' + (a.approved ? '<span class="badge done">승인됨</span>' : '<span class="badge wait">대기중</span>') + '</td>'
+        + '<td style="white-space:nowrap">' + fmtDT(a.created_at).slice(0,10) + '</td>'
+        + '<td style="white-space:nowrap">'
+        + (a.approved
+            ? '<button class="ghost" onclick="setAdmin(\'' + esc(a.email) + '\', false)">승인 해제</button> '
+            : '<button class="pri" style="margin-top:0;padding:6px 13px;font-size:.8rem" onclick="setAdmin(\'' + esc(a.email) + '\', true)">✅ 승인</button> ')
+        + '<button class="danger" onclick="delAdmin(\'' + esc(a.email) + '\')">🗑 삭제</button></td></tr>';
+    }).join('') + '</table>';
+}
+async function setAdmin(email, approved){
+  var res = await sb.from('tl_admins').update({ approved: approved }).eq('email', email);
+  if(res.error){ setMsg('admMsg','err','처리 실패: ' + res.error.message); return; }
+  setMsg('admMsg','ok', email + (approved ? ' 님을 승인했습니다.' : ' 님의 승인을 해제했습니다.'));
+  loadAdmins();
+}
+async function delAdmin(email){
+  if(!confirm(email + ' 님을 관리자 명부에서 삭제할까요?')) return;
+  var res = await sb.from('tl_admins').delete().eq('email', email);
+  if(res.error){ setMsg('admMsg','err','삭제 실패: ' + res.error.message); return; }
+  setMsg('admMsg','ok','삭제했습니다.');
+  loadAdmins();
 }
 
 /* ── 팀 목록 ── */
