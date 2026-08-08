@@ -63,7 +63,7 @@ begin
     insert into tl_notifications(question_id, phone, message)
     values (new.id, new.phone,
       '[사교원 팀러닝] ' || coalesce(v_team,'') || ' 질문에 답변이 게시되었습니다. 팀 공간에서 확인해 주세요: '
-      || 'https://deka2026.github.io/teamlearning-site/team.html?t=' || v_token);
+      || 'https://sakyowon.co.kr/teamlearning-site/team.html?t=' || v_token);
   end if;
   return new;
 end $$;
