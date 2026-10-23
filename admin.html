@@ -71,8 +71,6 @@ table.tl td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:m
 </style>
 </head>
 <body>
-<div id="sk-notice" style="position:sticky;top:0;z-index:9999;background:#fff4d6;color:#5a3d00;border-bottom:1px solid #e8c97a;padding:10px 16px;font:14px/1.5 sans-serif;text-align:center">이 사이트의 로그인·신청·게시 기능은 사교원 통합사이트 개편(2026-10)으로 잠시 멈춰 있습니다. 문의는 <a href="https://sakyowon.co.kr/#/contact" style="color:#8a5a00;font-weight:600">사교원 홈페이지 문의</a>로 주세요.</div>
-
 
 <header>
   <div class="wrap">
@@ -204,8 +202,8 @@ table.tl td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:m
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
-var SB_URL = 'https://gklecgujcoznxyvywnyu.supabase.co';
-var SB_KEY = 'sb_publishable_gedQpfHqmnd1hlGNnrglLw_n5b3f3YN';
+var SB_URL = 'https://api.sakyowon.co.kr'; // 2026-10-23 자체 서버로 전환(옛 주소 gklecgujcoznxyvywnyu.supabase.co 는 소멸)
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkwNTAzMzc1LCJleHAiOjE5NDgxODMzNzV9.G4ID46_hTmLW6Rh_K--SypPry6mH7_mNFL4NlT2YEZc';
 var sb = window.supabase.createClient(SB_URL, SB_KEY);
 
 var teams = [];
